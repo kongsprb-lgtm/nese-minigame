@@ -344,6 +344,52 @@ async function runTests() {
       logger.info(`✅ Redeem expensive item validation passed! Error msg: ${redResFail.data.error}`);
     }
 
+    // --- TEST 11: Save title configuration ---
+    logger.info('Test 11: Save custom title configuration...');
+    const saveTitleRes = await apiRequest(`/player/${TEST_ROBLOX_ID}/title`, 'POST', {
+      slot: 13,
+      titleText: 'Owner',
+      font: 'GothamBold',
+      mode: 'Mode1',
+      textSize: 24,
+      solidColor: { R: 255, G: 0, B: 0 }
+    });
+
+    if (saveTitleRes.status !== 200) {
+      logger.error(`❌ Save title config failed! Status: ${saveTitleRes.status}`);
+      testPassed = false;
+    } else {
+      logger.info('✅ Save title config passed!');
+    }
+
+    // Verify it is fetched with player details
+    const playResWithTitles = await apiRequest(`/player/${TEST_ROBLOX_ID}`);
+    if (playResWithTitles.status !== 200 || !playResWithTitles.data.player.titles || !playResWithTitles.data.player.titles['13']) {
+      logger.error('❌ Fetching player did not return saved titles!', playResWithTitles.data);
+      testPassed = false;
+    } else {
+      logger.info('✅ Fetching player with titles passed!');
+    }
+
+    // --- TEST 12: Delete title configuration ---
+    logger.info('Test 12: Delete custom title configuration...');
+    const deleteTitleRes = await apiRequest(`/player/${TEST_ROBLOX_ID}/title/13`, 'DELETE');
+    if (deleteTitleRes.status !== 200) {
+      logger.error(`❌ Delete title config failed! Status: ${deleteTitleRes.status}`);
+      testPassed = false;
+    } else {
+      logger.info('✅ Delete title config passed!');
+    }
+
+    // Verify it is no longer in user object
+    const playResWithoutTitles = await apiRequest(`/player/${TEST_ROBLOX_ID}`);
+    if (playResWithoutTitles.status !== 200 || (playResWithoutTitles.data.player.titles && playResWithoutTitles.data.player.titles['13'])) {
+      logger.error('❌ Fetching player still returned deleted title!', playResWithoutTitles.data);
+      testPassed = false;
+    } else {
+      logger.info('✅ Verification of deleted title passed!');
+    }
+
   } catch (error) {
     logger.error(`Test execution error: ${error.message}`);
     testPassed = false;

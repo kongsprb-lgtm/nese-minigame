@@ -30,6 +30,21 @@ const UserSchema = new mongoose.Schema({
     min: 0 // Points cannot be negative
   },
   inventory: [InventoryItemSchema],
+  titles: {
+    type: Map,
+    of: new mongoose.Schema({
+      titleText: String,
+      font: String,
+      mode: String,
+      textSize: Number,
+      solidColor: {
+        R: Number,
+        G: Number,
+        B: Number
+      }
+    }, { _id: false }),
+    default: {}
+  },
   linked: {
     type: Boolean,
     default: false

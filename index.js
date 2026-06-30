@@ -1,4 +1,7 @@
 require('dotenv').config();
+if (process.env.USE_MOCK_DB === 'true') {
+  require('./database/mockMongoose');
+}
 const { connectDatabase } = require('./database/connection');
 const { createServer } = require('./server');
 const { startBot } = require('./bot');
@@ -34,20 +37,35 @@ const defaultShopItems = [
     description: 'Beautiful, glowing neon wings that allow you to hover.',
     price: 500,
     category: 'Accessories'
+  },
+  {
+    id: 'slot_13',
+    name: 'Title Slot 13',
+    description: 'Unlocks Slot 13 in the custom Title Editor.',
+    price: 25,
+    category: 'Slots'
+  },
+  {
+    id: 'slot_15',
+    name: 'Title Slot 15',
+    description: 'Unlocks Slot 15 in the custom Title Editor.',
+    price: 50,
+    category: 'Slots'
   }
 ];
 
 // Seed shop items into database if they do not exist
 async function seedShopItems() {
   try {
-    const count = await ShopItem.countDocuments();
-    if (count === 0) {
-      logger.info('ShopItem database is empty. Seeding default items...');
-      await ShopItem.insertMany(defaultShopItems);
-      logger.info(`Successfully seeded ${defaultShopItems.length} default shop items.`);
-    } else {
-      logger.debug('ShopItem database already has items. Seeding skipped.');
+    logger.info('Checking and seeding default shop items...');
+    for (const item of defaultShopItems) {
+      await ShopItem.updateOne(
+        { id: item.id },
+        { $setOnInsert: item },
+        { upsert: true }
+      );
     }
+    logger.info('Default shop items seeding check complete.');
   } catch (error) {
     logger.error(`Failed to seed shop items: ${error.message}`);
   }

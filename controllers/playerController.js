@@ -89,6 +89,7 @@ async function getPlayer(req, res) {
         username: user.username,
         points: user.points,
         inventory: user.inventory,
+        titles: user.titles instanceof Map ? Object.fromEntries(user.titles) : (user.titles || {}),
         linked: user.linked,
         createdAt: user.createdAt
       }
@@ -266,11 +267,116 @@ async function redeemItem(req, res) {
   }
 }
 
+/**
+ * POST /player/:robloxId/title
+ * Saves/updates a title config for a slot.
+ * Body parameters: slot, titleText, font, mode, textSize, solidColor
+ */
+async function saveTitle(req, res) {
+  const { robloxId } = req.params;
+  const { slot, titleText, font, mode, textSize, solidColor } = req.body;
+
+  if (!robloxId || !slot) {
+    return res.status(400).json({ error: 'Missing robloxId or slot in request' });
+  }
+
+  try {
+    const user = await User.findOne({ robloxId });
+    if (!user) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+
+    // Set the slot title config in the Map
+    user.titles = user.titles || new Map();
+    user.titles.set(slot.toString(), {
+      titleText,
+      font,
+      mode,
+      textSize: Number(textSize) || 22,
+      solidColor
+    });
+
+    await user.save();
+    logger.info(`Saved title config for Roblox ID ${robloxId} slot ${slot}: "${titleText}"`);
+    return res.status(200).json({
+      success: true,
+      titles: user.titles instanceof Map ? Object.fromEntries(user.titles) : (user.titles || {})
+    });
+  } catch (error) {
+    logger.error(`Error in saveTitle: ${error.message}`);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * DELETE /player/:robloxId/title/:slot
+ * Removes a title config for a slot.
+ */
+async function removeTitle(req, res) {
+  const { robloxId, slot } = req.params;
+
+  if (!robloxId || !slot) {
+    return res.status(400).json({ error: 'Missing robloxId or slot in request' });
+  }
+
+  try {
+    const user = await User.findOne({ robloxId });
+    if (!user) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+
+    if (user.titles) {
+      user.titles.delete(slot.toString());
+      await user.save();
+    }
+
+    logger.info(`Removed title config for Roblox ID ${robloxId} slot ${slot}`);
+    return res.status(200).json({
+      success: true,
+      titles: user.titles instanceof Map ? Object.fromEntries(user.titles) : (user.titles || {})
+    });
+  } catch (error) {
+    logger.error(`Error in removeTitle: ${error.message}`);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function devAutosync(req, res) {
+  const { robloxId } = req.body;
+  if (!robloxId) {
+    return res.status(400).json({ error: 'Missing robloxId' });
+  }
+
+  try {
+    const pending = await PendingSync.findOne({ robloxId });
+    const username = pending ? pending.username : 'TestPlayer';
+
+    const user = await User.findOneAndUpdate(
+      { robloxId },
+      { linked: true, points: 100, username },
+      { upsert: true, new: true }
+    );
+
+    if (pending) {
+      await PendingSync.deleteOne({ _id: pending._id });
+    }
+
+    logger.info(`[DEV] Autosynced player ${robloxId} (${username}) with 100 points.`);
+    return res.status(200).json({ success: true, message: 'Autosync completed successfully.', user });
+  } catch (error) {
+    logger.error(`Error in devAutosync: ${error.message}`);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
 module.exports = {
   generateSync,
   getPlayer,
   getInventory,
   addPoints,
   removePoints,
-  redeemItem
+  redeemItem,
+  saveTitle,
+  removeTitle,
+  devAutosync
 };

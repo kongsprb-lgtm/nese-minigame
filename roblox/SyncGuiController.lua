@@ -83,3 +83,58 @@ syncButton.MouseButton1Click:Connect(function()
 		action = "verify_sync"
 	})
 end)
+
+-- Create and setup the Titles toggle button dynamically
+local function setupTitlesButton()
+	local existingButton = screenGui:FindFirstChild("TitlesToggleButton")
+	if existingButton then existingButton:Destroy() end
+	
+	local toggleButton = Instance.new("TextButton")
+	toggleButton.Name = "TitlesToggleButton"
+	toggleButton.Size = UDim2.new(0, 130, 0, 36)
+	toggleButton.Position = UDim2.new(1, -145, 0, 15) -- Top-right corner
+	toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	toggleButton.BackgroundTransparency = 0.2
+	toggleButton.Text = "Customize Title"
+	toggleButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+	toggleButton.Font = Enum.Font.GothamBold
+	toggleButton.TextSize = 13
+	toggleButton.Parent = screenGui
+	
+	local uiCorner = Instance.new("UICorner")
+	uiCorner.CornerRadius = UDim.new(0, 8)
+	uiCorner.Parent = toggleButton
+	
+	local uiStroke = Instance.new("UIStroke")
+	uiStroke.Color = Color3.fromRGB(60, 60, 60)
+	uiStroke.Thickness = 1
+	uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	uiStroke.Parent = toggleButton
+	
+	-- Hover effects
+	toggleButton.MouseEnter:Connect(function()
+		toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	end)
+	toggleButton.MouseLeave:Connect(function()
+		toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	end)
+	
+	toggleButton.MouseButton1Click:Connect(function()
+		local playerGui = player:WaitForChild("PlayerGui", 5)
+		if playerGui then
+			local playerTitlePanel = playerGui:WaitForChild("PlayerTitlePanel", 5)
+			if playerTitlePanel then
+				local toggleEvent = playerTitlePanel:WaitForChild("TogglePlayerTitleGUI", 5)
+				if toggleEvent then
+					toggleEvent:Fire()
+				else
+					warn("[SyncGui] TogglePlayerTitleGUI BindableEvent not found in PlayerTitlePanel.")
+				end
+			else
+				warn("[SyncGui] PlayerTitlePanel not found in PlayerGui.")
+			end
+		end
+	end)
+end
+
+task.spawn(setupTitlesButton)

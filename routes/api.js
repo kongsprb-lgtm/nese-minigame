@@ -13,5 +13,8 @@ router.post('/redeem', playerController.redeemItem);
 router.get('/inventory/:robloxId', playerController.getInventory);
 router.post('/addpoints', playerController.addPoints);
 router.post('/removepoints', playerController.removePoints);
+router.post('/player/:robloxId/title', playerController.saveTitle);
+router.delete('/player/:robloxId/title/:slot', playerController.removeTitle);
+router.post('/dev/autosync', playerController.devAutosync);
 
 module.exports = router;
